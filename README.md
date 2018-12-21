@@ -18,7 +18,7 @@ By default it uses Redis as I18n backend for translations, but you can add your 
 Bundle Riddick gem:
 ```ruby
 # Gemfile
-gem 'riddick'
+gem "riddick", git: "https://github.com/ukazap/riddick.git"
 ```
 
 Mount Riddick server:
@@ -151,6 +151,27 @@ I18n.backend = I18n::Backend::Chain.new I18n::Backend::KeyValue.new(Redis::Names
 ```
 
 Your I18n translations will be stored in `riddick` namespace.
+
+### Redis::CommandError (ERR unknown command '[]')
+
+This is caused by API changes in newer version of redis-rb gem. To fix this you can decorate your redis instance:
+
+```ruby
+#  config/initializers/i18n.rb
+class RedisWithSquareBracket < SimpleDelegator
+  def [](*args)
+    get *args
+  end
+
+  def []=(*args)
+    set *args
+  end
+end
+
+riddick_redis = RedisWithSquareBracket.new(Redis::Namespace.new(:riddick))
+
+I18n.backend = I18n::Backend::Chain.new I18n::Backend::KeyValue.new(riddick_redis), I18n.backend
+```
 
 ## Internals
 
