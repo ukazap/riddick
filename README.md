@@ -12,13 +12,15 @@ Friendly GUI for managing your I18n translations.
 By default it uses Redis as I18n backend for translations, but you can add your own key-value backend.
 
 ![Screenshot](https://raw.github.com/kostia/riddick/master/screenshot.png)
+![Screenshot2](https://raw.github.com/kostia/riddick/master/screenshot2.png)
+
 
 ## Installation
 
 Bundle Riddick gem:
 ```ruby
 # Gemfile
-gem 'riddick'
+gem "riddick", git: "https://github.com/ukazap/riddick.git"
 ```
 
 Mount Riddick server:
@@ -95,6 +97,18 @@ de:
       title: 'Willkommen bei Riddick!'
 ```
 
+### Ignore translation keys
+
+You may decide not to include certain translation keys in the GUI, it is possible by passing a regex pattern:
+
+```ruby
+# config/routes.rb
+require 'riddick/server'
+MyApp::Application.routes.draw do
+  mount Riddick::Server.new(reject_key_pattern: /^\w+\.devise(_token_auth)?/), at: 'riddick', as: 'riddick'
+end
+```
+
 ## Troubleshooting
 
 ### JSON decoding errors
@@ -139,6 +153,27 @@ I18n.backend = I18n::Backend::Chain.new I18n::Backend::KeyValue.new(Redis::Names
 ```
 
 Your I18n translations will be stored in `riddick` namespace.
+
+### Redis::CommandError (ERR unknown command '[]')
+
+This is caused by API changes in newer version of redis-rb gem. To fix this you can decorate your redis instance:
+
+```ruby
+#  config/initializers/i18n.rb
+class RedisWithSquareBracket < SimpleDelegator
+  def [](*args)
+    get *args
+  end
+
+  def []=(*args)
+    set *args
+  end
+end
+
+riddick_redis = RedisWithSquareBracket.new(Redis::Namespace.new(:riddick))
+
+I18n.backend = I18n::Backend::Chain.new I18n::Backend::KeyValue.new(riddick_redis), I18n.backend
+```
 
 ## Internals
 
