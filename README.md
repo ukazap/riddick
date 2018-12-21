@@ -95,6 +95,18 @@ de:
       title: 'Willkommen bei Riddick!'
 ```
 
+### Ignore translation keys
+
+You may decide not to include certain translation keys in the GUI, it is possible by passing a regex pattern:
+
+```ruby
+# config/routes.rb
+require 'riddick/server'
+MyApp::Application.routes.draw do
+  mount Riddick::Server.new(reject_key_pattern: /^\w+\.devise(_token_auth)?/), at: 'riddick', as: 'riddick'
+end
+```
+
 ## Troubleshooting
 
 ### JSON decoding errors
