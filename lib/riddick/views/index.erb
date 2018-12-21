@@ -35,7 +35,16 @@
           data-placeholder="<%= t 'form.select.placeholder', 'en.greeting' %>">
         <option></option>
         <% @translations.each do |k, v| %>
-          <option value="<%= h(k) %>" data-v='<%= h(v) %>'><%= h(k) %></option>
+          <% if !@option_already_rendered.include?(key_without_locale(k)) %>
+            <option value="<%= h(k) %>" data-v='<%= h(v) %>'><%= h(k) %></option>
+            <% current_locale = k.split('.').first %>
+            <% locales_other_than(current_locale).each do |other_locale| %>
+              <% other_k = key_locale(k, other_locale) %>
+              <% other_v = @other_translations[other_locale][other_k] %>
+              <option value="<%= h(other_k) %>" data-v='<%= h(other_v) %>'><%= h(other_k) %></option>
+            <% end %>
+            <% @option_already_rendered << key_without_locale(k) %>
+          <% end %>
         <% end %>
       </select>
       <button type="submit" class="btn btn-success"><%= t 'form.button', 'Change' %></button><br />
@@ -52,43 +61,27 @@
 
     <!-- List of translations. -->
     <% if @translations.any? %>
-      <table class="table table-striped">
+      <table class="table">
         <tr>
           <th><%= t 'table.header.path', 'Path' %></th>
           <th><%= t 'table.header.translation', 'Translation' %></th>
           <th><%= t 'table.header.actions', 'Actions' %></th>
         </tr>
+
         <% @translations.each_pair do |k, v| %>
-          <tr>
-            <% if v.kind_of? Riddick::Backends::KeyValue::Value %>
-              <!-- Details for custom translation. -->
-              <td><span class="badge badge-success"><%= k %></span></td>
-              <td>
-                <code>
-                  <a rel="popover" data-title="<%= t 'table.popover.my', 'My translation' %>"
-                    data-content='<%= h(v) %>' data-trigger="hover"><%= h(truncate(v)) %></a>
-                </code>
-              </td>
-              <td>
-                <a href="#custom-translations" data-choose="<%= h(k) %>" data-v='<%= h(v) %>'
-                  class="btn btn-mini"><%= t 'table.edit.my', 'Edit' %></a>
-                <a href="<%= del_url k %>" data-confirm="<%= t 'table.confirm', 'Are you sure?' %>"
-                  class="btn btn-mini btn-danger"><%= t 'table.delete', 'Delete' %></a>
-              </td>
-            <% else %>
-              <!-- Details for default translation. -->
-              <td><span class="badge"><%= k %></span></td>
-              <td>
-                <code>
-                  <a rel="popover" data-title="<%= t 'table.popover.default', 'Default translation' %>"
-                    data-content='<%= h(v) %>' data-trigger="hover"><%= h(truncate(v)) %></a>
-                </code>
-              </td>
-              <td>
-                <a href="#custom-translations" data-choose="<%= h(k) %>" data-v='<%= h(v) %>'
-                  class="btn btn-mini"><%= t 'table.edit.default', 'Edit' %></a>
-              </td>
+          <% if !@already_rendered.include?(key_without_locale(k)) %>
+            <%= @k = k; @v = v; erb :translation_row, layout: false %>
+            <% current_locale = k.split('.').first %>
+            <% locales_other_than(current_locale).each do |other_locale| %>
+              <% @k = key_locale(k, other_locale) %>
+              <% @v = @other_translations[other_locale][@k] %>
+              <%= erb :translation_row, layout: false %>
             <% end %>
+            <% @already_rendered << key_without_locale(k) %>
+          <% end %>
+
+          <tr class="separator-row">
+            <td colspan="3"><br></td>
           </tr>
         <% end %>
       </table>

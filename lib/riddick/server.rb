@@ -10,10 +10,38 @@ module Riddick
     # To correctly display the default translations, we have to ensure they are loaded on startup.
     Riddick::Backends.simple.init_translations
 
+    def initialize(reject_key_pattern: nil)
+      super
+      @reject_key_pattern = reject_key_pattern
+    end
+
+    # Filter translation keys
+    def filter_translations(translations)
+      return translations unless @reject_key_pattern.is_a? Regexp
+      return translations.reject { |key| key =~ @reject_key_pattern }
+    end
+
     helpers do
       # Build an internal URL.
       def url(*parts)
         [request.script_name, parts].join('/').squeeze '/'
+      end
+
+      # Rails-style partial
+      def partial(template, *args)
+        options = args.extract_options!
+        options.merge!(:layout => false)
+        if collection = options.delete(:collection) then
+          collection.inject([]) do |buffer, member|
+            buffer << erb(template, options.merge(
+                                      :layout => false,
+                                      :locals => {template.to_sym => member}
+                                    )
+                         )
+          end.join("\n")
+        else
+          erb(template, options)
+        end
       end
 
       # URL for the main interface.
@@ -56,25 +84,73 @@ module Riddick
       def h(text)
         Rack::Utils.escape_html(text)
       end
+
+      def key_locale(key, locale)
+        "#{locale}.#{key_without_locale(key)}"
+      end
+
+      def key_without_locale(key)
+        key.sub(/^\w+./, "")
+      end
+
+      def locales_other_than(locale)
+        I18n.available_locales - [:"#{locale}"]
+      end
+
+      def flag_emoji(country_code)
+        @flag_emoji ||= {
+          en: 'GB'.tr('A-Z', "\u{1F1E6}-\u{1F1FF}"),
+          id: 'ID'.tr('A-Z', "\u{1F1E6}-\u{1F1FF}")
+        }
+
+        return @flag_emoji[:"#{country_code}"]
+      end
     end
 
     # Render index page with all translations.
     get '/' do
-      predefined = Riddick::Backends.simple.translations
-      custom = Riddick::Backends.key_value.translations
-      @translations = predefined.merge custom
+      @other_translations = {}
+      I18n.available_locales.each do |other_locale|
+        I18n.locale = other_locale
+        predefined = Riddick::Backends.simple.translations
+        custom = Riddick::Backends.key_value.translations
+        @other_translations[other_locale] = filter_translations predefined.merge(custom)
+      end
+
+      @translations = @other_translations[I18n.default_locale]
+      @already_rendered = Set.new
+      @option_already_rendered = Set.new
+
       erb :index
     end
 
     # Render index page with default translations only.
     get '/default' do
-      @translations = Riddick::Backends.simple.translations
+      @other_translations = {}
+      I18n.available_locales.each do |other_locale|
+        I18n.locale = other_locale
+        @other_translations[other_locale] = filter_translations Riddick::Backends.simple.translations
+      end
+
+      @translations = @other_translations[I18n.default_locale]
+      @already_rendered = Set.new
+      @option_already_rendered = Set.new
+
       erb :index
     end
 
     # Render index page with custom translations only.
     get '/my' do
-      @translations = Riddick::Backends.key_value.translations
+      @other_translations = {}
+      I18n.available_locales.each do |other_locale|
+        I18n.locale = other_locale
+        @other_translations[other_locale] = filter_translations Riddick::Backends.key_value.translations
+      end
+
+      @translations = @other_translations[I18n.default_locale]
+      @already_rendered = Set.new
+      @option_already_rendered = Set.new
+
       erb :index
     end
 

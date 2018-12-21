@@ -1,0 +1,31 @@
+<tr>
+  <% if @v.kind_of? Riddick::Backends::KeyValue::Value %>
+    <!-- Details for custom translation. -->
+    <td><span class="badge badge-success"><%= "#{flag_emoji(@k.split('.').first)} #{@k}" %></span></td>
+    <td>
+      <code>
+        <a rel="popover" data-title="<%= t 'table.popover.my', 'My translation' %>"
+          data-content='<%= h(@v) %>' data-trigger="hover"><%= h(truncate(@v)) %></a>
+      </code>
+    </td>
+    <td>
+      <a href="#custom-translations" data-choose="<%= h(@k) %>" data-v='<%= h(@v) %>'
+        class="btn btn-mini"><%= t 'table.edit.my', 'Edit' %></a>
+      <a href="<%= del_url @k %>" data-confirm="<%= t 'table.confirm', 'Are you sure?' %>"
+        class="btn btn-mini btn-danger"><%= t 'table.delete', 'Delete' %></a>
+    </td>
+  <% else %>
+    <!-- Details for default translation. -->
+    <td><span class="badge"><%= "#{flag_emoji(@k.split('.').first)} #{@k}" %></span></td>
+    <td>
+      <code>
+        <a rel="popover" data-title="<%= t 'table.popover.default', 'Default translation' %>"
+          data-content='<%= h(@v) %>' data-trigger="hover"><%= h(truncate(@v)) %></a>
+      </code>
+    </td>
+    <td>
+      <a href="#custom-translations" data-choose="<%= h(@k) %>" data-v='<%= h(@v) %>'
+        class="btn btn-mini"><%= t 'table.edit.default', 'Edit' %></a>
+    </td>
+  <% end %>
+</tr>

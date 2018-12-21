@@ -4,3 +4,4 @@ select[data-chosen] { width: 600px; }
 textarea { width: 680px; margin-top: 10px; }
 button { margin-left: 10px; }
 [rel=popover] { cursor: pointer; }
+tr:not(.separator-row) { background: #f5f5f5b0; }
